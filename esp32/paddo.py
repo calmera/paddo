@@ -1,4 +1,5 @@
 from utime import sleep_ms
+import urandom
 
 from machine import Pin
 from neopixel import NeoPixel
@@ -15,9 +16,15 @@ class Paddo:
             [18, 19, 20, 21, 29, 37, 45, 44, 43, 42, 34, 26],
             [27, 28, 36, 35]
         ]
+        self.lengths = [28, 20, 12, 4]
         
     def flush(self):
         self.np.write()
+
+    def get(self, ring, strand):
+        upper_pos, lower_pos = self.resolve(ring, strand)
+
+        return self.np[upper_pos], self.np[lower_pos]
 
     def clear(self, flush=True):
         for i in range(128):
@@ -83,4 +90,16 @@ class Paddo:
             sleep_ms(delay)
 
     def count(self, ring):
-        return len(self.mapping[ring])
+        return self.lengths[ring]
+
+    def random(self):
+        ring = randint(0, 3)
+        strand = randint(0, self.lengths[ring] -1)
+        return ring, strand
+
+def randint(min, max):
+    span = max - min + 1
+    div = 0x3fffffff // span
+    offset = urandom.getrandbits(30) // div
+    val = min + offset
+    return val

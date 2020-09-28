@@ -24,6 +24,7 @@ with open('/config.json', 'r') as f:
 if config is None:
   p.all([255, 0, 0])
 
+
 def do_connect():
   import network
   wlan = network.WLAN(network.STA_IF)
@@ -43,11 +44,11 @@ def do_nats_connect():
     url=config["nats"],
     name='swift', 
     ssl_required=False, 
-    verbose=True, 
+    verbose=False,
     pedantic=False, 
     socket_keepalive=True, 
     raw=False, 
-    debug=True)
+    debug=False)
   c.connect()
   
   return c
@@ -58,11 +59,36 @@ p.ring(2, [0, 255, 255])
 c = do_nats_connect()
 p.ring(1, [0, 255, 255])
 
-proto = Protocol(p)
+if config["mode"] == "command":
+  proto = Protocol(p)
 
-subscription = c.subscribe('paddo', lambda msg: proto.handle(msg))
-p.ring(0, [0, 255, 255])
+  subscription = c.subscribe('paddo', lambda msg: proto.handle(msg))
+  p.ring(0, [0, 255, 255])
+else:
+  color = config["color"]
+  def randomize(msg):
+    # print("msg received ...")
 
-p.all([0, 255, 0])
+    # -- get a random ring
+    ring, strand = p.random()
+
+    # print("going for ring %d, strand %d" % (ring, strand))
+
+    value, lower_value = p.get(ring, strand)
+    # print("current value", value)
+
+    if value[0] == 0 and value[1] == 0 and value[2] == 0:
+      p.strand(ring, strand, color)
+      # print("coloring")
+    else:
+      p.strand(ring, strand, [0, 0, 0])
+      # print("clearing")
+
+  print("subscribing to %s" % config["subject"])
+  subscription = c.subscribe(config["subject"], lambda msg: randomize(msg))
+
+  p.ring(0, [0, 255, 255])
+
+p.clear()
 
 c.wait()
