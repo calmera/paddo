@@ -3,6 +3,7 @@ from utime import sleep_ms
 from machine import Pin
 from neopixel import NeoPixel
 
+
 class Paddo:
     def __init__(self, pin=16):
         self.pin = Pin(pin, Pin.OUT)
@@ -32,7 +33,7 @@ class Paddo:
         if flush:
             self.np.write()
 
-    def set(self, ring, pos, value, flush=True):
+    def strand(self, ring, pos, value, flush=True):
         upper_pos, lower_pos = self.resolve(ring, pos)
         
         self.np[upper_pos] = value

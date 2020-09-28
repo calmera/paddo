@@ -11,7 +11,18 @@ from utime import sleep
 from uos import urandom
 
 import machine
+import ujson
 
+p = Paddo()
+p.clear()
+p.ring(3, [0, 255, 255])
+
+config = None
+with open('/config.json', 'r') as f:
+  config = ujson.loads(str(f.read()))
+
+if config is None:
+  p.all([255, 0, 0])
 
 def do_connect():
   import network
@@ -19,7 +30,7 @@ def do_connect():
   wlan.active(True)
   if not wlan.isconnected():
     print('connecting to network...')
-    wlan.connect('ORBI', 'phobicviolin114')
+    wlan.connect(config["network"]["ssid"], config["network"]["pwd"])
     while not wlan.isconnected():
       pass
   
@@ -29,7 +40,7 @@ def do_connect():
 def do_nats_connect():
   import mpynats
   c = mpynats.Connection(
-    url='nats://192.168.1.69:4222', 
+    url=config["nats"],
     name='swift', 
     ssl_required=False, 
     verbose=True, 
@@ -41,10 +52,6 @@ def do_nats_connect():
   
   return c
 
-p = Paddo()
-p.clear()
-p.ring(3, [0, 255, 255])
-
 do_connect()
 p.ring(2, [0, 255, 255])
 
@@ -53,7 +60,7 @@ p.ring(1, [0, 255, 255])
 
 proto = Protocol(p)
 
-subscription = c.subscribe('paddo', lambda msg : proto.handle(msg) )
+subscription = c.subscribe('paddo', lambda msg: proto.handle(msg))
 p.ring(0, [0, 255, 255])
 
 p.all([0, 255, 0])
